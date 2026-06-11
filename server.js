@@ -20,10 +20,20 @@ io.on("connection", (socket) => {
 
     onlineUsers++;
 
-    io.emit(
-        "user_status",
-        "online"
-    );
+    if (onlineUsers >= 2) {
+
+        io.emit(
+            "user_status",
+            "online"
+        );
+
+    } else {
+
+        io.emit(
+            "user_status",
+            "offline"
+        );
+    }
 
     socket.on(
         "send_message",
@@ -33,7 +43,6 @@ io.on("connection", (socket) => {
                 "receive_message",
                 data
             );
-
         }
     );
 
@@ -44,7 +53,6 @@ io.on("connection", (socket) => {
             socket.broadcast.emit(
                 "typing"
             );
-
         }
     );
 
@@ -55,7 +63,6 @@ io.on("connection", (socket) => {
             socket.broadcast.emit(
                 "message_delivered"
             );
-
         }
     );
 
@@ -66,7 +73,6 @@ io.on("connection", (socket) => {
             socket.broadcast.emit(
                 "message_seen"
             );
-
         }
     );
 
@@ -80,20 +86,23 @@ io.on("connection", (socket) => {
 
             onlineUsers--;
 
-            if (onlineUsers <= 0) {
+            if (onlineUsers < 0) {
 
                 onlineUsers = 0;
+            }
+
+            if (onlineUsers >= 2) {
 
                 io.emit(
                     "user_status",
-                    "offline"
+                    "online"
                 );
 
             } else {
 
                 io.emit(
                     "user_status",
-                    "online"
+                    "offline"
                 );
             }
         }
@@ -107,12 +116,11 @@ app.get(
         res.send(
             "Shreya Chat Server Running"
         );
-
     }
 );
 
 const PORT =
-    process.env.PORT || 3000;
+        process.env.PORT || 3000;
 
 server.listen(
     PORT,
@@ -122,6 +130,5 @@ server.listen(
             "Server running on port " +
             PORT
         );
-
     }
 );
