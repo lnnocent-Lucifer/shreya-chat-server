@@ -36,100 +36,111 @@ io.on("connection", (socket) => {
     }
 
     socket.on(
-            "send_message",
-            (data) => {
+        "send_message",
+        (data) => {
 
-                socket.broadcast.emit(
-                        "receive_message",
-                        data
-                );
-            }
+            socket.broadcast.emit(
+                "receive_message",
+                data
+            );
+        }
     );
 
     socket.on(
-            "typing",
-            (username) => {
+        "send_media",
+        (data) => {
 
-                socket.broadcast.emit(
-                        "typing",
-                        username
-                );
-            }
+            socket.broadcast.emit(
+                "receive_media",
+                data
+            );
+        }
     );
 
     socket.on(
-            "message_delivered",
-            () => {
+        "typing",
+        (username) => {
 
-                socket.broadcast.emit(
-                        "message_delivered"
-                );
-            }
+            socket.broadcast.emit(
+                "typing",
+                username
+            );
+        }
     );
 
     socket.on(
-            "message_seen",
-            () => {
+        "message_delivered",
+        () => {
 
-                socket.broadcast.emit(
-                        "message_seen"
-                );
-            }
+            socket.broadcast.emit(
+                "message_delivered"
+            );
+        }
     );
 
     socket.on(
-            "disconnect",
-            () => {
+        "message_seen",
+        () => {
 
-                console.log(
-                        "User Disconnected"
+            socket.broadcast.emit(
+                "message_seen"
+            );
+        }
+    );
+
+    socket.on(
+        "disconnect",
+        () => {
+
+            console.log(
+                "User Disconnected"
+            );
+
+            onlineUsers--;
+
+            if (onlineUsers < 0) {
+
+                onlineUsers = 0;
+            }
+
+            if (onlineUsers >= 2) {
+
+                io.emit(
+                    "user_status",
+                    "online"
                 );
 
-                onlineUsers--;
+            } else {
 
-                if (onlineUsers < 0) {
-
-                    onlineUsers = 0;
-                }
-
-                if (onlineUsers >= 2) {
-
-                    io.emit(
-                            "user_status",
-                            "online"
-                    );
-
-                } else {
-
-                    io.emit(
-                            "user_status",
-                            "offline"
-                    );
-                }
+                io.emit(
+                    "user_status",
+                    "offline"
+                );
             }
+        }
     );
 });
 
 app.get(
-        "/",
-        (req, res) => {
+    "/",
+    (req, res) => {
 
-            res.send(
-                    "Shreya Chat Server Running"
-            );
-        }
+        res.send(
+            "Shreya Chat Server Running"
+        );
+    }
 );
 
 const PORT =
-        process.env.PORT || 3000;
+    process.env.PORT || 3000;
 
 server.listen(
-        PORT,
-        () => {
+    PORT,
+    () => {
 
-            console.log(
-                    "Server running on port " +
-                    PORT
-            );
-        }
+        console.log(
+            "Server running on port " +
+            PORT
+        );
+    }
 );
