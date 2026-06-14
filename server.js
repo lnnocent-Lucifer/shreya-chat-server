@@ -73,12 +73,49 @@ io.on("connection", (socket) => {
 
     socket.on(
         "send_message",
-        (data) => {
+        async (data) => {
 
             socket.broadcast.emit(
                 "receive_message",
                 data
             );
+
+            try {
+
+                for (const token of userTokens) {
+
+                    await admin.messaging().send({
+
+                        token: token,
+
+                        notification: {
+
+                            title:
+                                "💬 Shreya Chat",
+
+                            body:
+                                data
+                        },
+
+                        android: {
+
+                            priority:
+                                "high"
+                        }
+                    });
+                }
+
+                console.log(
+                    "Push Notification Sent"
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "FCM Error:",
+                    error
+                );
+            }
         }
     );
 
