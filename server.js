@@ -26,6 +26,8 @@ const io = new Server(server, {
 
 let onlineUsers = 0;
 
+let userTokens = [];
+
 io.on("connection", (socket) => {
 
     console.log("User Connected");
@@ -46,6 +48,28 @@ io.on("connection", (socket) => {
             "offline"
         );
     }
+
+    socket.on(
+        "register_fcm",
+        (token) => {
+
+            if (
+                token &&
+                !userTokens.includes(token)
+            ) {
+
+                userTokens.push(token);
+
+                console.log(
+                    "FCM Registered"
+                );
+
+                console.log(
+                    token
+                );
+            }
+        }
+    );
 
     socket.on(
         "send_message",
