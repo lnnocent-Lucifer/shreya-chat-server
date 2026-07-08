@@ -169,7 +169,7 @@ io.on("connection", (socket) => {
 
     socket.on(
         "message_delivered",
-        () -> {
+        () => {
 
             socket.broadcast.emit(
                     "message_delivered"
