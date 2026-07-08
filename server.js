@@ -72,6 +72,11 @@ io.on(
                     console.log(
                             token
                     );
+
+                    console.log(
+                            "ALL TOKENS:",
+                            userTokens
+                    );
                 }
         );
 
@@ -85,6 +90,16 @@ io.on(
                     );
 
                     try {
+
+                        console.log(
+                                "MESSAGE:",
+                                message
+                        );
+
+                        console.log(
+                                "TOKENS:",
+                                userTokens
+                        );
 
                         const senderToken =
                                 socket.fcmToken;
@@ -195,9 +210,10 @@ io.on(
                 "disconnect",
                 () => {
 
-                    delete userTokens[
-                            socket.id
-                    ];
+                    /*
+                     * DO NOT DELETE TOKEN
+                     * We want offline notifications.
+                     */
 
                     console.log(
                             "User Disconnected"
