@@ -26,11 +26,16 @@ const io = new Server(server, {
 
 let onlineUsers = 0;
 
-let userTokens = [];
+/*
+ * socket.id -> fcm token
+ */
+let userTokens = {};
 
 io.on("connection", (socket) => {
 
-    console.log("User Connected");
+    console.log(
+        "User Connected"
+    );
 
     onlineUsers++;
 
@@ -53,21 +58,20 @@ io.on("connection", (socket) => {
         "register_fcm",
         (token) => {
 
-            if (
-                token &&
-                !userTokens.includes(token)
-            ) {
+            socket.fcmToken =
+                    token;
 
-                userTokens.push(token);
+            userTokens[
+                    socket.id
+            ] = token;
 
-                console.log(
+            console.log(
                     "FCM Registered"
-                );
+            );
 
-                console.log(
+            console.log(
                     token
-                );
-            }
+            );
         }
     );
 
@@ -76,44 +80,66 @@ io.on("connection", (socket) => {
         async (data) => {
 
             socket.broadcast.emit(
-                "receive_message",
-                data
+                    "receive_message",
+                    data
             );
 
             try {
 
-                for (const token of userTokens) {
+                for (
+                        const socketId
+                        in userTokens
+                ) {
 
-                    await admin.messaging().send({
+                    const token =
+                            userTokens[
+                                    socketId
+                            ];
 
-                        token: token,
+                    /*
+                     * Skip sender
+                     */
+                    if (
+                            token ===
+                            socket.fcmToken
+                    ) {
 
-                        notification: {
+                        continue;
+                    }
 
-                            title:
-                                "💬 Shreya Chat",
+                    await admin
+                            .messaging()
+                            .send({
 
-                            body:
-                                data
-                        },
+                                token:
+                                        token,
 
-                        android: {
+                                notification: {
 
-                            priority:
-                                "high"
-                        }
-                    });
+                                    title:
+                                            "💬 Shreya Chat",
+
+                                    body:
+                                            data
+                                },
+
+                                android: {
+
+                                    priority:
+                                            "high"
+                                }
+                            });
                 }
 
                 console.log(
-                    "Push Notification Sent"
+                        "Push Notification Sent"
                 );
 
             } catch (error) {
 
                 console.error(
-                    "FCM Error:",
-                    error
+                        "FCM Error:",
+                        error
                 );
             }
         }
@@ -124,8 +150,8 @@ io.on("connection", (socket) => {
         (data) => {
 
             socket.broadcast.emit(
-                "receive_media",
-                data
+                    "receive_media",
+                    data
             );
         }
     );
@@ -135,18 +161,18 @@ io.on("connection", (socket) => {
         (username) => {
 
             socket.broadcast.emit(
-                "typing",
-                username
+                    "typing",
+                    username
             );
         }
     );
 
     socket.on(
         "message_delivered",
-        () => {
+        () -> {
 
             socket.broadcast.emit(
-                "message_delivered"
+                    "message_delivered"
             );
         }
     );
@@ -156,7 +182,7 @@ io.on("connection", (socket) => {
         () => {
 
             socket.broadcast.emit(
-                "message_seen"
+                    "message_seen"
             );
         }
     );
@@ -165,8 +191,12 @@ io.on("connection", (socket) => {
         "disconnect",
         () => {
 
+            delete userTokens[
+                    socket.id
+            ];
+
             console.log(
-                "User Disconnected"
+                    "User Disconnected"
             );
 
             onlineUsers--;
@@ -179,15 +209,15 @@ io.on("connection", (socket) => {
             if (onlineUsers >= 2) {
 
                 io.emit(
-                    "user_status",
-                    "online"
+                        "user_status",
+                        "online"
                 );
 
             } else {
 
                 io.emit(
-                    "user_status",
-                    "offline"
+                        "user_status",
+                        "offline"
                 );
             }
         }
@@ -199,21 +229,21 @@ app.get(
     (req, res) => {
 
         res.send(
-            "Shreya Chat Server Running"
+                "Shreya Chat Server Running"
         );
     }
 );
 
 const PORT =
-    process.env.PORT || 3000;
+        process.env.PORT || 3000;
 
 server.listen(
-    PORT,
-    () => {
+        PORT,
+        () => {
 
-        console.log(
-            "Server running on port " +
-            PORT
-        );
-    }
+            console.log(
+                    "Server running on port " +
+                    PORT
+            );
+        }
 );
