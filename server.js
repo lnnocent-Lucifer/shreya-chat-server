@@ -58,6 +58,10 @@ io.on("connection", (socket) => {
         "register_fcm",
         (token) => {
 
+            if (!token) {
+                return;
+            }
+
             socket.fcmToken =
                     token;
 
@@ -86,59 +90,79 @@ io.on("connection", (socket) => {
 
             try {
 
+                const senderToken =
+                        socket.fcmToken;
+
                 for (
                         const socketId
                         in userTokens
                 ) {
 
-                    const token =
+                    const targetToken =
                             userTokens[
                                     socketId
                             ];
 
                     /*
-                     * Skip sender
+                     * Don't notify sender
                      */
                     if (
-                            token ===
-                            socket.fcmToken
+                            targetToken ===
+                            senderToken
                     ) {
 
                         continue;
                     }
 
-                    await admin
-                            .messaging()
-                            .send({
+                    const response =
+                            await admin
+                                    .messaging()
+                                    .send({
 
-                                token:
-                                        token,
+                                        token:
+                                                targetToken,
 
-                                notification: {
+                                        notification: {
 
-                                    title:
-                                            "💬 Shreya Chat",
+                                            title:
+                                                    data.username ||
+                                                    "💬 Shreya Chat",
 
-                                    body:
-                                            data
-                                },
+                                            body:
+                                                    data.message ||
+                                                    data.toString() ||
+                                                    "New Message"
+                                        },
 
-                                android: {
+                                        android: {
 
-                                    priority:
-                                            "high"
-                                }
-                            });
+                                            priority:
+                                                    "high",
+
+                                            notification: {
+
+                                                channelId:
+                                                        "shreya_chat",
+
+                                                priority:
+                                                        "high",
+
+                                                defaultSound:
+                                                        true
+                                            }
+                                        }
+                                    });
+
+                    console.log(
+                            "FCM SUCCESS:",
+                            response
+                    );
                 }
-
-                console.log(
-                        "Push Notification Sent"
-                );
 
             } catch (error) {
 
                 console.error(
-                        "FCM Error:",
+                        "FCM ERROR:",
                         error
                 );
             }
