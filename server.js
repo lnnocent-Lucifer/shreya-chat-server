@@ -29,7 +29,7 @@ const io =
 let onlineUsers = 0;
 
 /*
- * socket.id -> fcm token
+ * socket.id -> FCM token
  */
 let userTokens = {};
 
@@ -43,20 +43,12 @@ io.on(
 
         onlineUsers++;
 
-        if (onlineUsers >= 2) {
-
-            io.emit(
-                    "user_status",
-                    "online"
-            );
-
-        } else {
-
-            io.emit(
-                    "user_status",
-                    "offline"
-            );
-        }
+        io.emit(
+                "user_status",
+                onlineUsers >= 2
+                        ? "online"
+                        : "offline"
+        );
 
         socket.on(
                 "register_fcm",
@@ -107,9 +99,6 @@ io.on(
                                             socketId
                                     ];
 
-                            /*
-                             * Don't notify sender
-                             */
                             if (
                                     targetToken ===
                                     senderToken
@@ -126,17 +115,6 @@ io.on(
                                                 token:
                                                         targetToken,
 
-                                                notification: {
-
-                                                    title:
-                                                            "💬 Shreya Chat",
-
-                                                    body:
-                                                            String(
-                                                                    message
-                                                            )
-                                                },
-
                                                 data: {
 
                                                     title:
@@ -151,16 +129,7 @@ io.on(
                                                 android: {
 
                                                     priority:
-                                                            "high",
-
-                                                    notification: {
-
-                                                        channelId:
-                                                                "shreya_chat",
-
-                                                        defaultSound:
-                                                                true
-                                                    }
+                                                            "high"
                                                 }
                                             });
 
@@ -241,20 +210,12 @@ io.on(
                         onlineUsers = 0;
                     }
 
-                    if (onlineUsers >= 2) {
-
-                        io.emit(
-                                "user_status",
-                                "online"
-                        );
-
-                    } else {
-
-                        io.emit(
-                                "user_status",
-                                "offline"
-                        );
-                    }
+                    io.emit(
+                            "user_status",
+                            onlineUsers >= 2
+                                    ? "online"
+                                    : "offline"
+                    );
                 }
         );
     }
