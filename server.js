@@ -29,9 +29,9 @@ const io =
 let onlineUsers = 0;
 
 /*
- * socket.id -> FCM token
+ * username -> token
  */
-let userTokens = {};
+const userTokens = {};
 
 io.on(
     "connection",
@@ -52,113 +52,148 @@ io.on(
 
         socket.on(
                 "register_fcm",
-                (token) => {
+                (data) => {
 
-                    if (!token) {
-                        return;
+                    try {
+
+                        const user =
+                                JSON.parse(
+                                        data
+                                );
+
+                        const username =
+                                user.username;
+
+                        const token =
+                                user.token;
+
+                        if (
+                                !username ||
+                                !token
+                        ) {
+
+                            return;
+                        }
+
+                        userTokens[
+                                username
+                        ] = token;
+
+                        socket.username =
+                                username;
+
+                        console.log(
+                                "FCM Registered:"
+                        );
+
+                        console.log(
+                                username
+                        );
+
+                    } catch (e) {
+
+                        console.error(
+                                "REGISTER ERROR:",
+                                e
+                        );
                     }
-
-                    socket.fcmToken =
-                            token;
-
-                    userTokens[
-                            socket.id
-                    ] = token;
-
-                    console.log(
-                            "FCM Registered"
-                    );
-
-                    console.log(
-                            token
-                    );
-
-                    console.log(
-                            "ALL TOKENS:",
-                            userTokens
-                    );
                 }
         );
 
         socket.on(
                 "send_message",
-                async (message) => {
-
-                    socket.broadcast.emit(
-                            "receive_message",
-                            message
-                    );
+                async (data) => {
 
                     try {
 
-                        console.log(
-                                "MESSAGE:",
+                        const messageData =
+                                JSON.parse(
+                                        data
+                                );
+
+                        const sender =
+                                messageData.username;
+
+                        const message =
+                                messageData.message;
+
+                        socket.broadcast.emit(
+                                "receive_message",
                                 message
                         );
 
-                        console.log(
-                                "TOKENS:",
-                                userTokens
-                        );
-
-                        const senderToken =
-                                socket.fcmToken;
-
                         for (
-                                const socketId
+                                const username
                                 in userTokens
                         ) {
 
-                            const targetToken =
-                                    userTokens[
-                                            socketId
-                                    ];
-
                             if (
-                                    targetToken ===
-                                    senderToken
+                                    username ===
+                                    sender
                             ) {
 
                                 continue;
                             }
 
-                            const response =
-                                    await admin
-                                            .messaging()
-                                            .send({
+                            const token =
+                                    userTokens[
+                                            username
+                                    ];
 
-                                                token:
-                                                        targetToken,
+                            try {
 
-                                                data: {
+                                const response =
+                                        await admin
+                                                .messaging()
+                                                .send({
 
-                                                    title:
-                                                            "💬 Shreya Chat",
+                                                    token:
+                                                            token,
 
-                                                    body:
-                                                            String(
-                                                                    message
-                                                            )
-                                                },
+                                                    notification: {
 
-                                                android: {
+                                                        title:
+                                                                sender,
 
-                                                    priority:
-                                                            "high"
-                                                }
-                                            });
+                                                        body:
+                                                                message
+                                                    },
 
-                            console.log(
-                                    "FCM SUCCESS:",
-                                    response
-                            );
+                                                    android: {
+
+                                                        priority:
+                                                                "high",
+
+                                                        notification: {
+
+                                                            channelId:
+                                                                    "shreya_chat",
+
+                                                            defaultSound:
+                                                                    true
+                                                        }
+                                                    }
+                                                });
+
+                                console.log(
+                                        "FCM SUCCESS:",
+                                        response
+                                );
+
+                            } catch (err) {
+
+                                console.error(
+                                        "FCM SEND ERROR:",
+                                        err
+                                );
+                            }
                         }
 
-                    } catch (error) {
+                    } catch (e) {
 
                         console.error(
-                                "FCM ERROR:",
-                                error
+                                "MESSAGE ERROR:",
+                                e
                         );
                     }
                 }
@@ -210,18 +245,15 @@ io.on(
                 "disconnect",
                 () => {
 
-                    /*
-                     * DO NOT DELETE TOKEN
-                     * We want offline notifications.
-                     */
-
                     console.log(
                             "User Disconnected"
                     );
 
                     onlineUsers--;
 
-                    if (onlineUsers < 0) {
+                    if (
+                            onlineUsers < 0
+                    ) {
 
                         onlineUsers = 0;
                     }
@@ -232,6 +264,11 @@ io.on(
                                     ? "online"
                                     : "offline"
                     );
+
+                    /*
+                     * Keep token.
+                     * Do NOT delete.
+                     */
                 }
         );
     }
