@@ -16,13 +16,15 @@ const { Server } = require("socket.io");
 
 const app = express();
 
-const server = http.createServer(app);
+const server =
+        http.createServer(app);
 
-const io = new Server(server, {
-    cors: {
-        origin: "*"
-    }
-});
+const io =
+        new Server(server, {
+            cors: {
+                origin: "*"
+            }
+        });
 
 let onlineUsers = 0;
 
@@ -31,231 +33,241 @@ let onlineUsers = 0;
  */
 let userTokens = {};
 
-io.on("connection", (socket) => {
+io.on(
+    "connection",
+    (socket) => {
 
-    console.log(
-        "User Connected"
-    );
-
-    onlineUsers++;
-
-    if (onlineUsers >= 2) {
-
-        io.emit(
-            "user_status",
-            "online"
+        console.log(
+                "User Connected"
         );
 
-    } else {
+        onlineUsers++;
 
-        io.emit(
-            "user_status",
-            "offline"
-        );
-    }
+        if (onlineUsers >= 2) {
 
-    socket.on(
-        "register_fcm",
-        (token) => {
-
-            if (!token) {
-                return;
-            }
-
-            socket.fcmToken =
-                    token;
-
-            userTokens[
-                    socket.id
-            ] = token;
-
-            console.log(
-                    "FCM Registered"
+            io.emit(
+                    "user_status",
+                    "online"
             );
 
-            console.log(
-                    token
+        } else {
+
+            io.emit(
+                    "user_status",
+                    "offline"
             );
         }
-    );
 
-    socket.on(
-        "send_message",
-        async (data) => {
+        socket.on(
+                "register_fcm",
+                (token) => {
 
-            socket.broadcast.emit(
-                    "receive_message",
-                    data
-            );
-
-            try {
-
-                const senderToken =
-                        socket.fcmToken;
-
-                for (
-                        const socketId
-                        in userTokens
-                ) {
-
-                    const targetToken =
-                            userTokens[
-                                    socketId
-                            ];
-
-                    /*
-                     * Don't notify sender
-                     */
-                    if (
-                            targetToken ===
-                            senderToken
-                    ) {
-
-                        continue;
+                    if (!token) {
+                        return;
                     }
 
-                    const response =
-                            await admin
-                                    .messaging()
-                                    .send({
+                    socket.fcmToken =
+                            token;
 
-                                        token:
-                                                targetToken,
-
-                                        notification: {
-
-                                            title:
-                                                    data.username ||
-                                                    "💬 Shreya Chat",
-
-                                            body:
-                                                    data.message ||
-                                                    data.toString() ||
-                                                    "New Message"
-                                        },
-
-                                        android: {
-
-                                            priority:
-                                                    "high",
-
-                                            notification: {
-
-                                                channelId:
-                                                        "shreya_chat",
-
-                                                priority:
-                                                        "high",
-
-                                                defaultSound:
-                                                        true
-                                            }
-                                        }
-                                    });
+                    userTokens[
+                            socket.id
+                    ] = token;
 
                     console.log(
-                            "FCM SUCCESS:",
-                            response
+                            "FCM Registered"
+                    );
+
+                    console.log(
+                            token
                     );
                 }
+        );
 
-            } catch (error) {
+        socket.on(
+                "send_message",
+                async (message) => {
 
-                console.error(
-                        "FCM ERROR:",
-                        error
-                );
-            }
-        }
-    );
+                    socket.broadcast.emit(
+                            "receive_message",
+                            message
+                    );
 
-    socket.on(
-        "send_media",
-        (data) => {
+                    try {
 
-            socket.broadcast.emit(
-                    "receive_media",
-                    data
-            );
-        }
-    );
+                        const senderToken =
+                                socket.fcmToken;
 
-    socket.on(
-        "typing",
-        (username) => {
+                        for (
+                                const socketId
+                                in userTokens
+                        ) {
 
-            socket.broadcast.emit(
-                    "typing",
-                    username
-            );
-        }
-    );
+                            const targetToken =
+                                    userTokens[
+                                            socketId
+                                    ];
 
-    socket.on(
-        "message_delivered",
-        () => {
+                            /*
+                             * Don't notify sender
+                             */
+                            if (
+                                    targetToken ===
+                                    senderToken
+                            ) {
 
-            socket.broadcast.emit(
-                    "message_delivered"
-            );
-        }
-    );
+                                continue;
+                            }
 
-    socket.on(
-        "message_seen",
-        () => {
+                            const response =
+                                    await admin
+                                            .messaging()
+                                            .send({
 
-            socket.broadcast.emit(
-                    "message_seen"
-            );
-        }
-    );
+                                                token:
+                                                        targetToken,
 
-    socket.on(
-        "disconnect",
-        () => {
+                                                notification: {
 
-            delete userTokens[
-                    socket.id
-            ];
+                                                    title:
+                                                            "💬 Shreya Chat",
 
-            console.log(
-                    "User Disconnected"
-            );
+                                                    body:
+                                                            String(
+                                                                    message
+                                                            )
+                                                },
 
-            onlineUsers--;
+                                                data: {
 
-            if (onlineUsers < 0) {
+                                                    title:
+                                                            "💬 Shreya Chat",
 
-                onlineUsers = 0;
-            }
+                                                    body:
+                                                            String(
+                                                                    message
+                                                            )
+                                                },
 
-            if (onlineUsers >= 2) {
+                                                android: {
 
-                io.emit(
-                        "user_status",
-                        "online"
-                );
+                                                    priority:
+                                                            "high",
 
-            } else {
+                                                    notification: {
 
-                io.emit(
-                        "user_status",
-                        "offline"
-                );
-            }
-        }
-    );
-});
+                                                        channelId:
+                                                                "shreya_chat",
 
-app.get(
-    "/",
-    (req, res) => {
+                                                        defaultSound:
+                                                                true
+                                                    }
+                                                }
+                                            });
 
-        res.send(
-                "Shreya Chat Server Running"
+                            console.log(
+                                    "FCM SUCCESS:",
+                                    response
+                            );
+                        }
+
+                    } catch (error) {
+
+                        console.error(
+                                "FCM ERROR:",
+                                error
+                        );
+                    }
+                }
+        );
+
+        socket.on(
+                "send_media",
+                (data) => {
+
+                    socket.broadcast.emit(
+                            "receive_media",
+                            data
+                    );
+                }
+        );
+
+        socket.on(
+                "typing",
+                (username) => {
+
+                    socket.broadcast.emit(
+                            "typing",
+                            username
+                    );
+                }
+        );
+
+        socket.on(
+                "message_delivered",
+                () => {
+
+                    socket.broadcast.emit(
+                            "message_delivered"
+                    );
+                }
+        );
+
+        socket.on(
+                "message_seen",
+                () => {
+
+                    socket.broadcast.emit(
+                            "message_seen"
+                    );
+                }
+        );
+
+        socket.on(
+                "disconnect",
+                () => {
+
+                    delete userTokens[
+                            socket.id
+                    ];
+
+                    console.log(
+                            "User Disconnected"
+                    );
+
+                    onlineUsers--;
+
+                    if (onlineUsers < 0) {
+
+                        onlineUsers = 0;
+                    }
+
+                    if (onlineUsers >= 2) {
+
+                        io.emit(
+                                "user_status",
+                                "online"
+                        );
+
+                    } else {
+
+                        io.emit(
+                                "user_status",
+                                "offline"
+                        );
+                    }
+                }
         );
     }
+);
+
+app.get(
+        "/",
+        (req, res) => {
+
+            res.send(
+                    "Shreya Chat Server Running"
+            );
+        }
 );
 
 const PORT =
